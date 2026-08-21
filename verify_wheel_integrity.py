@@ -1,9 +1,9 @@
 """
 Verify wheel integrity before pushing to GitHub.
 Run: python verify_wheel_integrity.py
-Checks: underscore folders, BOM in WHEEL, RECORD hash mismatches, folder naming.
+Checks: underscore folders, BOM in WHEEL, RECORD hash mismatches, folder naming, Generator tag.
 """
-import os, zipfile, hashlib, base64, glob, sys
+import os, zipfile, hashlib, base64, glob, sys, re
 
 WHEEL_DIR = os.path.join(os.path.dirname(__file__), 'wheels')
 errors = []
@@ -87,6 +87,33 @@ if bad_names:
     print(f'  FAIL: {bad_names}')
 else:
     print('  ALL CLEAR')
+
+# Check 5: Generator tag is PythonSTB-RIMI-Build (no opencode/pynacl/other banned values)
+print('=== CHECK 5: Generator tag ===')
+ALLOWED_GENERATOR = 'PythonSTB-RIMI-Build'
+bad_gen = 0
+for whl_path in glob.glob(os.path.join(WHEEL_DIR, '**', '*.whl'), recursive=True):
+    if 'android' not in os.path.basename(whl_path):
+        continue
+    try:
+        with zipfile.ZipFile(whl_path) as z:
+            for name in z.namelist():
+                if name.endswith('.dist-info/WHEEL'):
+                    content = z.read(name).decode('utf-8')
+                    for line in content.splitlines():
+                        if line.lower().startswith('generator:'):
+                            gen_val = line.split(':', 1)[1].strip()
+                            if gen_val != ALLOWED_GENERATOR:
+                                bad_gen += 1
+                                print(f'  BAD: {os.path.relpath(whl_path, WHEEL_DIR)} -> Generator: {gen_val}')
+                            break
+    except Exception as e:
+        bad_gen += 1
+        print(f'  ERROR: {os.path.basename(whl_path)}: {e}')
+if bad_gen:
+    errors.append(f'Wrong Generator tag in {bad_gen} wheels (must be {ALLOWED_GENERATOR})')
+else:
+    print(f'  ALL CLEAR — all use {ALLOWED_GENERATOR}')
 
 # Summary
 print()
