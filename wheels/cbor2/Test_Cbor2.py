@@ -40,8 +40,13 @@ def section(title):
 # ---------------------------------------------------------------------------
 def import_cbor2():
     import cbor2
-    print("    cbor2", cbor2.__version__)
-    assert isinstance(cbor2.__version__, str)
+    try:
+        ver = cbor2.__version__
+    except AttributeError:
+        from importlib.metadata import version
+        ver = version("cbor2")
+    print("    cbor2", ver)
+    assert isinstance(ver, str)
 
 
 def import_submodules():
@@ -215,10 +220,10 @@ def roundtrip_decimal():
 # ---------------------------------------------------------------------------
 def roundtrip_tag():
     import cbor2
-    tag = cbor2.CBORTag(1, "2026-01-15")
+    tag = cbor2.CBORTag(999, "2026-01-15")
     data = cbor2.dumps(tag)
     result = cbor2.loads(data)
-    assert result.tag == 1
+    assert result.tag == 999
     assert result.value == "2026-01-15"
 
 
@@ -264,7 +269,7 @@ def roundtrip_large_int():
 def sorted_keys():
     import cbor2
     d = {"z": 1, "a": 2, "m": 3}
-    data = cbor2.dumps(d, sort_keys=True)
+    data = cbor2.dumps(d, canonical=True)
     result = cbor2.loads(data)
     assert result == d
 

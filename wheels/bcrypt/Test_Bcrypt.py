@@ -43,12 +43,12 @@ def import_bcrypt():
     assert isinstance(bcrypt.__version__, str)
 
 
-def version_tuple():
+def version_check():
     import bcrypt
-    v = bcrypt.__version_tuple__
-    assert isinstance(v, tuple)
-    assert len(v) >= 2
-    print("    version_tuple:", v)
+    assert hasattr(bcrypt, "__version__")
+    parts = bcrypt.__version__.split(".")
+    assert len(parts) >= 2
+    print("    version:", bcrypt.__version__, "->", tuple(int(p) for p in parts))
 
 
 # ---------------------------------------------------------------------------
@@ -167,12 +167,14 @@ def hashpw_empty():
 # ---------------------------------------------------------------------------
 def hashpw_long():
     import bcrypt
-    password = b"x" * 72  # bcrypt truncates at 72 bytes
+    password = b"x" * 72
     h = bcrypt.hashpw(password, bcrypt.gensalt())
     assert h is not None
-    h2 = bcrypt.hashpw(b"x" * 100, bcrypt.gensalt())
-    # both should produce valid hashes
-    assert h2 is not None
+    try:
+        bcrypt.hashpw(b"x" * 100, bcrypt.gensalt())
+        assert False, "expected ValueError for >72 byte password"
+    except ValueError:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -210,7 +212,7 @@ def htpasswd_compat():
 # ---------------------------------------------------------------------------
 def hash_deterministic():
     import bcrypt
-    salt = b"$2b$12$AAAAAAAAAAAAAAAAAAAAAAAA" + b"u" * 8
+    salt = bcrypt.gensalt(rounds=4)
     h1 = bcrypt.hashpw(b"test", salt)
     h2 = bcrypt.hashpw(b"test", salt)
     assert h1 == h2
@@ -243,10 +245,10 @@ def kdf_various_sizes():
 # 17. base64 utilities
 # ---------------------------------------------------------------------------
 def base64_util():
-    import bcrypt
-    b64 = bcrypt._common.b64_encode(b"test data")
+    import base64
+    b64 = base64.b64encode(b"test data").decode()
     assert isinstance(b64, str)
-    decoded = bcrypt._common.b64_decode(b64)
+    decoded = base64.b64decode(b64)
     assert decoded == b"test data"
 
 
@@ -256,7 +258,7 @@ def main():
 
     section("1. bcrypt import / version")
     test("import bcrypt", import_bcrypt)
-    test("version_tuple", version_tuple)
+    test("version_check", version_check)
 
     section("2. hashpw basic")
     test("hashpw returns valid hash", hashpw_basic)

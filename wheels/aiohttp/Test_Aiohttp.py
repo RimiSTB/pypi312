@@ -368,8 +368,11 @@ def c_extensions():
         print("    _speedups loaded")
     except ImportError:
         print("    _speedups not present (removed in 3.14+)")
-    import aiohttp._cookies
-    print("    _cookies loaded")
+    try:
+        import aiohttp._cookies
+        print("    _cookies loaded")
+    except ImportError:
+        print("    _cookies not present (merged in 3.14+)")
 
 
 # ---------------------------------------------------------------------------

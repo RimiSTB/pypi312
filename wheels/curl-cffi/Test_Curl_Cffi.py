@@ -276,8 +276,8 @@ def redirect_handling():
 # ---------------------------------------------------------------------------
 def impersonate_list():
     from curl_cffi import CurlHttpVersion
-    assert CurlHttpVersion.HTTP_1_1
-    assert CurlHttpVersion.HTTP_2
+    assert CurlHttpVersion.V1_1
+    assert CurlHttpVersion.V2_0
 
 
 # ---------------------------------------------------------------------------

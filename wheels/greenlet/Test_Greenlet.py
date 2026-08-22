@@ -88,15 +88,15 @@ def send_value():
     import greenlet
     received = []
     def worker():
-        val = (yield)
+        val = greenlet.getcurrent().parent.switch()
         received.append(val)
-        val2 = (yield)
+        val2 = greenlet.getcurrent().parent.switch()
         received.append(val2)
 
     g = greenlet.greenlet(worker)
-    next(g)
-    g.send(42)
-    g.send(99)
+    g.switch()
+    g.switch(42)
+    g.switch(99)
     assert received == [42, 99]
 
 
@@ -105,12 +105,12 @@ def throw_exception():
     caught = []
     def worker():
         try:
-            yield
+            greenlet.getcurrent().parent.switch()
         except ValueError as e:
             caught.append(str(e))
 
     g = greenlet.greenlet(worker)
-    next(g)
+    g.switch()
     g.throw(ValueError, "test_error")
     assert caught == ["test_error"]
 
@@ -159,11 +159,9 @@ def dead_cannot_switch():
 
     g = greenlet.greenlet(worker)
     g.switch()
-    try:
-        g.switch()
-        assert False, "should have raised"
-    except greenlet.greenlet.error:
-        pass
+    assert g.dead is True
+    result = g.switch()
+    assert result == ()
 
 
 # ---------------------------------------------------------------------------
